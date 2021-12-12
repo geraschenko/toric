@@ -53,7 +53,7 @@ def inv_2x2_det1(M: np.ndarray) -> np.ndarray:
   return np.array([[M[1, 1], -M[0, 1]], [-M[1, 0], M[0, 0]]], dtype=object)
 
 
-def normal_form(A: np.ndarray, include_inverses: bool=False
+def normal_form(A: np.ndarray, return_inverses: bool=False
     ) -> Tuple[np.ndarray, ...]:
   """Sorta like Smith normal form, but without divisibility guarantees.
 
@@ -61,11 +61,11 @@ def normal_form(A: np.ndarray, include_inverses: bool=False
 
   Args:
     A: an integer matrix.
-    include_inverses: if True, inverses of S and T are returned.
+    return_inverses: if True, inverses of S and T are returned.
 
   Returns:
     A tuple of integer matrices (S, D, T) (or (S, D, T, Sinv, Tinv) if
-    include_inverses is True) satisfying
+    return_inverses is True) satisfying
     * A == S @ D @ T
     * D is diagonal with the same shape as A
     * S and T are square of determinant 1, with inverses Sinv and Tinv.
@@ -87,7 +87,7 @@ def normal_form(A: np.ndarray, include_inverses: bool=False
   # S @ Sinv = I
   D = A.copy().astype(object)
   S, T = np.eye(D.shape[0], dtype=object), np.eye(D.shape[1], dtype=object)
-  if include_inverses: Sinv, Tinv = S.copy(), T.copy()
+  if return_inverses: Sinv, Tinv = S.copy(), T.copy()
 
   def clear_row(i):
     """Clears the i-th row of D, updating T and Tinv appropriately.
@@ -101,9 +101,9 @@ def normal_form(A: np.ndarray, include_inverses: bool=False
       M = exgcd(D[i, i], D[i, j]).T
       D[:, [i, j]] = D[:, [i, j]] @ M
       T[[i, j]] = inv_2x2_det1(M) @ T[[i, j]]
-      if include_inverses: Tinv[:, [i, j]] = Tinv[:, [i, j]] @ M
+      if return_inverses: Tinv[:, [i, j]] = Tinv[:, [i, j]] @ M
     assert (S @ D @ T == A).all()
-    if include_inverses: assert (Tinv @ T == np.eye(len(T))).all()
+    if return_inverses: assert (Tinv @ T == np.eye(len(T))).all()
     return True
 
   def clear_col(i):
@@ -118,9 +118,9 @@ def normal_form(A: np.ndarray, include_inverses: bool=False
       M = exgcd(D[i, i], D[j, i])
       D[[i, j]] = M @ D[[i, j]]
       S[:, [i, j]] = S[:, [i, j]] @ inv_2x2_det1(M)
-      if include_inverses: Sinv[[i, j]] = M @ Sinv[[i, j]]
+      if return_inverses: Sinv[[i, j]] = M @ Sinv[[i, j]]
     assert (S @ D @ T == A).all()
-    if include_inverses: assert (S @ Sinv == np.eye(len(S))).all()
+    if return_inverses: assert (S @ Sinv == np.eye(len(S))).all()
     return True
 
   for i in range(min(*D.shape)):
@@ -131,7 +131,47 @@ def normal_form(A: np.ndarray, include_inverses: bool=False
       if not clear_col(i):
         break
 
-  if include_inverses:
+  if return_inverses:
     return S, D, T, Sinv, Tinv
   else:
     return S, D, T
+
+
+def zero_pad(x: np.ndarray, length: int) -> np.ndarray:
+  """x, padded with 0's so that it has length at least length."""
+  assert x.ndim == 1
+  return np.concatenate([x, np.zeros(max(0, length - len(x)), dtype=x.dtype)])
+
+
+def kernel(A):
+  """Returns a matrix whose columns span the null space of A."""
+  S, D, T, Sinv, Tinv = normal_form(A, return_inverses=True)
+  kernel_D = zero_pad(np.diag(D), len(T)) == 0
+  return Tinv[:, kernel_D]
+
+
+def cokernel(A):
+  """Returns a matrix whose rows span the annihilator of the image of A."""
+  S, D, T, Sinv, Tinv = normal_form(A, return_inverses=True)
+  kernel_D = zero_pad(np.diag(D), len(S)) == 0
+  return Sinv[kernel_D]
+
+
+def relations(generators):
+  """Returns the matrix of relations for a given set of generators."""
+  return kernel(generators)
+
+
+def index_in_saturation(A):
+  """Returns the index of the image of A in its saturation."""
+  S, D, T = normal_form(A)
+  d = np.diag(D)
+  return abs(np.prod(d[d != 0]))
+
+
+def saturation(A):
+  """Returns a matrix whose columns span the saturation of the image of A."""
+  S, D, T = normal_form(A)
+  kernel_D = zero_pad(np.diag(D), len(S)) == 0
+  # TODO: this can be row reduced to make it prettier.
+  return S[~kernel_D]

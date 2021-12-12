@@ -7,7 +7,7 @@ class TestLinAlg(parameterized.TestCase):
   def test_normal_form(self):
     # TODO(geraschenko): set a seed.
     A = np.random.randint(-5, 5, size=(5, 5))
-    S, D, T, Sinv, Tinv = linalg.normal_form(A, include_inverses=True)
+    S, D, T, Sinv, Tinv = linalg.normal_form(A, return_inverses=True)
     np.testing.assert_array_equal(S @ D @ T, A)
     np.testing.assert_array_equal(S @ Sinv, np.eye(len(S)))
     np.testing.assert_array_equal(T @ Tinv, np.eye(len(T)))
