@@ -17,6 +17,7 @@ class TestLinAlg(parameterized.TestCase):
     M = linalg.exgcd(a, b)
     g = math.gcd(a, b)
     np.testing.assert_array_equal(M @ [a, b], [g, 0])
+    self.assertAlmostEqual(1, np.linalg.det(M.astype(float)))
     if a == 0 or b % a == 0:
       self.assertEqual(M[0, 1], 0)
 
