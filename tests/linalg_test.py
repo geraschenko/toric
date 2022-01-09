@@ -12,12 +12,12 @@ class TestLinAlg(parameterized.TestCase):
     np.testing.assert_array_equal(S @ Sinv, np.eye(len(S)))
     np.testing.assert_array_equal(T @ Tinv, np.eye(len(T)))
 
-  @parameterized.parameters([(1, 1), (-1, 1), (12, 20)])
+  @parameterized.parameters([(1, 1), (-1, 1), (12, 20), (0, 0)])
   def test_exgcd(self, a, b):
     M = linalg.exgcd(a, b)
     g = math.gcd(a, b)
     np.testing.assert_array_equal(M @ [a, b], [g, 0])
-    if b % a == 0:
+    if a == 0 or b % a == 0:
       self.assertEqual(M[0, 1], 0)
 
 

@@ -23,7 +23,10 @@ def exgcd(a: int, b: int) -> np.ndarray:
   # augmenting by the identity.
   M = np.array([[a, 1, 0],
                 [b, 0, 1]], dtype=object)
-  M = M[::-1]  # swap the rows; required for the guarantee when a divides b.
+  if a != 0:
+      # swap the rows; required for the guarantee when a divides b.
+      M = M[::-1]
+
   while M[1, 0] != 0:
     q = M[0, 0] // M[1, 0]
     M[0] -= q * M[1]
